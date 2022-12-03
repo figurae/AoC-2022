@@ -4,8 +4,8 @@ export default async function day(
 	exampleInput: string,
 	actualInput: string
 ): Promise<Results> {
-	const exampleLines = exampleInput.split('\r\n');
-	const actualLines = actualInput.split('\r\n');
+	const exampleLines = exampleInput.split('\n');
+	const actualLines = actualInput.split('\n');
 
 	const firstExampleResult = await solveFirst(exampleLines);
 	const firstResult = await solveFirst(actualLines);

@@ -1,5 +1,5 @@
 import day01 from './day01.ts';
-import day02 from "./day02.ts";
+import day02 from './day02.ts';
 
 const separator = '✲✧✲✧✲✧✲✧✲✧✲✧✲✧✲✧✲✧✲✧✲';
 
@@ -30,6 +30,9 @@ for await (const item of Deno.readDir('input')) {
 	}
 }
 
+inputs.exampleInputs.sort();
+inputs.actualInputs.sort();
+
 const days = [day01, day02];
 
 const allResults: Array<Results> = [];
@@ -38,16 +41,16 @@ for await (const [index, day] of days.entries()) {
 	allResults.push(
 		await day(
 			inputs.exampleInputs[index],
-			inputs.actualInputs[index],
+			inputs.actualInputs[index]
 			//''
 		)
 	);
 }
 
 for (const [index, result] of allResults.entries()) {
-/* 	console.log(`Day ${index + 1} first example result: ${result.firstExampleResult}`);
+	console.log(`Day ${index + 1} first example result: ${result.firstExampleResult}`);
 	console.log(`Day ${index + 1} first result: ${result.firstResult}`);
  	console.log(`Day ${index + 1} second example result: ${result.secondExampleResult}`);
 	console.log(`Day ${index + 1} second result: ${result.secondResult}`);
-	console.log(separator); */
+	console.log(separator);
 }
