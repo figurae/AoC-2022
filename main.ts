@@ -1,6 +1,7 @@
 import day01 from './day01.ts';
 import day02 from './day02.ts';
 import day03 from './day03.ts';
+import day04 from './day04.ts';
 
 const separator = '✲✧✲✧✲✧✲✧✲✧✲✧✲✧✲✧✲✧✲✧✲';
 
@@ -19,22 +20,27 @@ const inputs: {
 	actualInputs: [],
 };
 
+const filenames: string[] = [];
+
 for await (const item of Deno.readDir('input')) {
 	if (item.isFile) {
-		const content = await Deno.readTextFile('input/' + item.name);
-		if (item.name.includes('example')) {
-			inputs.exampleInputs.push(content);
-		}
-		if (item.name.includes('actual')) {
-			inputs.actualInputs.push(content);
-		}
+		filenames.push(item.name);
 	}
 }
 
-inputs.exampleInputs.sort();
-inputs.actualInputs.sort();
+filenames.sort();
 
-const days = [day01, day02, day03];
+for await (const filename of filenames) {
+	const content = await Deno.readTextFile('input/' + filename);
+	if (filename.includes('example')) {
+		inputs.exampleInputs.push(content);
+	}
+	if (filename.includes('actual')) {
+		inputs.actualInputs.push(content);
+	}
+}
+
+const days = [day01, day02, day03, day04];
 
 const allResults: Array<Results> = [];
 
