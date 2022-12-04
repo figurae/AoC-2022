@@ -48,7 +48,7 @@ for await (const [index, day] of days.entries()) {
 	);
 }
 
-for (const [index, result] of allResults.entries()) {
+for await (const [index, result] of allResults.entries()) {
 	console.log(
 		`Day ${index + 1} first example result: ${result.firstExampleResult}`
 	);
