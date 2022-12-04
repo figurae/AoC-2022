@@ -113,7 +113,7 @@ function didIWin(opponentAction: Action, myAction: Action): Outcome {
 }
 
 function selectDesiredOutcome(char: string): Outcome {
-	switch(char) {
+	switch (char) {
 		case 'X':
 			return Outcome.Lose;
 		case 'Y':
@@ -125,7 +125,10 @@ function selectDesiredOutcome(char: string): Outcome {
 	}
 }
 
-function chooseMyAction(opponentAction: Action, desiredOutcome: Outcome): Action {
+function chooseMyAction(
+	opponentAction: Action,
+	desiredOutcome: Outcome
+): Action {
 	for (const action of Object.values(Action)) {
 		if (didIWin(opponentAction, action as Action) === desiredOutcome)
 			return action as Action;
