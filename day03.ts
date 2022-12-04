@@ -90,31 +90,27 @@ async function findBadge(
 		return [currentChar, true];
 	}
 
-	if (index < rucksacks.length) {
-		for await (const item of rucksacks[index]) {
-			if (index > 0) {
-				if (currentChar === item) {
-					const [newChar, newIsFinal] = await findBadge(
-						rucksacks,
-						index + 1,
-						counter + 1,
-						[currentChar, isFinal]
-					);
-
-					if (currentChar === newChar) {
-						return [newChar, newIsFinal];
-					}
-				}
-			}
-
-			if (index === 0 && isFinal === false) {
-				[currentChar, isFinal] = await findBadge(
+	for await (const item of rucksacks[index]) {
+		if (index > 0) {
+			if (currentChar === item) {
+				const [newChar, newIsFinal] = await findBadge(
 					rucksacks,
 					index + 1,
-					counter,
-					[item, isFinal]
+					counter + 1,
+					[currentChar, isFinal]
 				);
+
+				if (currentChar === newChar) {
+					return [newChar, newIsFinal];
+				}
 			}
+		}
+
+		if (index === 0 && isFinal === false) {
+			[currentChar, isFinal] = await findBadge(rucksacks, index + 1, counter, [
+				item,
+				isFinal,
+			]);
 		}
 	}
 
