@@ -7,16 +7,11 @@ export default async function day02(
 	const exampleLines = exampleInput.split('\n');
 	const actualLines = actualInput.split('\n');
 
-	const firstExampleResult = await solveFirst(exampleLines);
-	const firstResult = await solveFirst(actualLines);
-	const secondExampleResult = await solveSecond(exampleLines);
-	const secondResult = await solveSecond(actualLines);
-
 	return {
-		firstExampleResult,
-		firstResult,
-		secondExampleResult,
-		secondResult,
+		firstExampleResult: await solveFirst(exampleLines),
+		firstResult: await solveFirst(actualLines),
+		secondExampleResult: await solveSecond(exampleLines),
+		secondResult: await solveSecond(actualLines),
 	};
 }
 
