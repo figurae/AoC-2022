@@ -4,6 +4,7 @@ import day03 from './day03.ts';
 import day04 from './day04.ts';
 import day05 from './day05.ts';
 import day06 from './day06.ts';
+import day07 from './day07.ts';
 
 const separator = '✲✧✲✧✲✧✲✧✲✧✲✧✲✧✲✧✲✧✲✧✲';
 
@@ -42,7 +43,7 @@ for await (const filename of filenames) {
 	}
 }
 
-const days = [day01, day02, day03, day04, day05, day06];
+const days = [day01, day02, day03, day04, day05, day06, day07];
 
 const allResults: Array<Results> = [];
 
