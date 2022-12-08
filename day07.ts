@@ -16,6 +16,10 @@ export default async function day07(
 }
 
 async function solveFirst(input: Array<string>): Promise<string> {
+	const tree = await buildTree(input);
+
+	console.log(tree);
+
 	return await 'not implemented';
 }
 
@@ -28,14 +32,14 @@ enum Command {
 	Ls,
 }
 
-interface Action {
-	command: Command;
-	target: Type | null;
-}
-
 enum Type {
 	File,
 	Directory,
+}
+
+interface Action {
+	command: Command | null;
+	target?: Structure;
 }
 
 interface Structure {
@@ -44,30 +48,122 @@ interface Structure {
 	size?: number;
 }
 
-// TODO: interface Tree {}
+// NOTE: this seems a wee bit too hacky
+function isAction(input: Action | Structure): input is Action {
+	return 'command' in input;
+}
 
-function parseInput(line: string): Action | Structure {
-	const tokens = line.split(' ');
-	let result: Action | Structure;
+class Node {
+	structure: Structure;
+	children: Node[];
+	parent?: Node;
 
-	switch (tokens[0]) {
-		case '$': {
-			result = parseAction(tokens);
-			break;
-		}
-		case 'dir': {
-			result = { name: tokens[1], type: Type.Directory };
-			break;
-		}
-		default: {
-			result = { name: tokens[1], type: Type.File, size: parseInt(tokens[0]) };
+	constructor(structure: Structure) {
+		this.structure = structure;
+		this.children = [];
+	}
+
+	addChild(child: Structure) {
+		const childNode = new Node(child);
+		childNode.parent = this;
+
+		this.children.push(childNode);
+	}
+}
+
+async function buildTree(lines: string[]): Promise<Node> {
+	const rootStructure = {
+		name: '/',
+		type: Type.Directory,
+	};
+	const rootNode = new Node(rootStructure);
+	let currentNode = rootNode;
+
+	for await (const line of lines) {
+		const input = parseInput(line);
+
+		if (isAction(input)) {
+			if (input.command === Command.Cd) {
+				switch (input.target?.name) {
+					case '/': {
+						/* 						console.log(
+							`changing currentNode ${currentNode.structure.name} to root ${rootNode.structure.name}`
+						); */
+						currentNode = rootNode;
+						break;
+					}
+					case '..': {
+						/* 						console.log
+							`changing currentNode ${currentNode.structure.name} to parent ${currentNode.parent?.structure.name}`
+						); */
+						currentNode = currentNode.parent!;
+						break;
+					}
+					default: {
+						/* 						console.log(
+							`changing currentNode ${currentNode.structure.name} to child ${
+								currentNode.children.find(
+									(dir) => dir === new Node(input.target as Structure)
+								)?.structure.name
+							}`
+						); */
+
+						const target = new Node(input.target!);
+
+						const newNode = currentNode.children.find(
+							// TODO: this should be more sophisticated if generalized
+							(dir) =>
+								dir.structure.name === target.structure.name &&
+								dir.parent === currentNode
+						)!;
+
+						currentNode = newNode;
+					}
+				}
+			}
+		} else {
+			// TODO: check for duplicates
+			/* 			console.log(
+				`adding child ${input.name} to currentNode ${currentNode.structure.name}`
+			); */
+			currentNode.addChild(input);
+			// console.log(`currentNode children: ${currentNode.children}`);
 		}
 	}
 
-	return result;
+	return rootNode;
+}
+
+function parseInput(line: string): Action | Structure {
+	const tokens = line.split(' ');
+
+	switch (tokens[0]) {
+		case '$': {
+			return parseAction(tokens);
+		}
+		case 'dir': {
+			return { name: tokens[1], type: Type.Directory };
+		}
+		default: {
+			return { name: tokens[1], type: Type.File, size: parseInt(tokens[0]) };
+		}
+	}
 }
 
 function parseAction(token: string[]): Action {
-	// not implemented
-	return { command: Command.Cd, target: null };
+	switch (token[1]) {
+		case 'ls': {
+			return { command: Command.Ls };
+		}
+		case 'cd': {
+			return {
+				command: Command.Cd,
+				target: { name: token[2], type: Type.Directory },
+			};
+		}
+		default:
+			return {
+				command: null,
+			};
+	}
 }
