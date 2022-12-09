@@ -16,15 +16,43 @@ export default async function day07(
 }
 
 async function solveFirst(input: Array<string>): Promise<string> {
-	const tree = await buildTree(input);
+	const rootStructure = {
+		name: '/',
+		type: Type.Directory,
+	};
+	const rootNode = new Node(rootStructure);
 
-	console.log(tree);
+	const tree = await buildTree(input, rootNode);
+	const dirSizes = await findDirSizes(tree);
 
-	return await 'not implemented';
+	const result = dirSizes
+		.map((item) => item.size)
+		.filter((item) => item < 100000)
+		.reduce((a, b) => a + b);
+
+	return result.toString();
 }
 
 async function solveSecond(input: Array<string>): Promise<string> {
-	return await 'not implemented';
+	const rootStructure = {
+		name: '/',
+		type: Type.Directory,
+	};
+	const rootNode = new Node(rootStructure);
+
+	const tree = await buildTree(input, rootNode);
+	const dirSizes = await findDirSizes(tree);
+
+	const availableSpace = 70000000 - dirSizes[0].size;
+	const neededSpace = 30000000 - availableSpace;
+
+	const candidates = dirSizes
+		.map((item) => item.size)
+		.filter((item) => item >= neededSpace);
+
+	const result = Math.min(...candidates);
+
+	return result.toString();
 }
 
 enum Command {
@@ -48,9 +76,9 @@ interface Structure {
 	size?: number;
 }
 
-// NOTE: this seems a wee bit too hacky
-function isAction(input: Action | Structure): input is Action {
-	return 'command' in input;
+interface DirSizes {
+	dir: Node;
+	size: number;
 }
 
 class Node {
@@ -71,12 +99,39 @@ class Node {
 	}
 }
 
-async function buildTree(lines: string[]): Promise<Node> {
-	const rootStructure = {
-		name: '/',
-		type: Type.Directory,
+async function findDirSizes(
+	startNode: Node,
+	dirSizes: DirSizes[] = []
+): Promise<DirSizes[]> {
+	const dirSize = {
+		dir: startNode,
+		size: 0,
 	};
-	const rootNode = new Node(rootStructure);
+	dirSizes.push(dirSize);
+
+	if (startNode.children.length > 0) {
+		for await (const child of startNode.children) {
+			const parentIndex = dirSizes.findIndex((item) => item.dir === startNode);
+
+			if (child.structure.type === Type.File) {
+				dirSizes[parentIndex].size += child.structure.size!;
+			} else {
+				const childDirSizes = await findDirSizes(child, dirSizes);
+				const childIndex = childDirSizes.findIndex(
+					(item) => item.dir === child
+				);
+
+				dirSizes[parentIndex].size += childDirSizes[childIndex].size;
+				// join without duplicates
+				dirSizes = [...new Set([...dirSizes, ...childDirSizes])];
+			}
+		}
+	}
+
+	return dirSizes;
+}
+
+async function buildTree(lines: string[], rootNode: Node): Promise<Node> {
 	let currentNode = rootNode;
 
 	for await (const line of lines) {
@@ -86,28 +141,14 @@ async function buildTree(lines: string[]): Promise<Node> {
 			if (input.command === Command.Cd) {
 				switch (input.target?.name) {
 					case '/': {
-						/* 						console.log(
-							`changing currentNode ${currentNode.structure.name} to root ${rootNode.structure.name}`
-						); */
 						currentNode = rootNode;
 						break;
 					}
 					case '..': {
-						/* 						console.log
-							`changing currentNode ${currentNode.structure.name} to parent ${currentNode.parent?.structure.name}`
-						); */
 						currentNode = currentNode.parent!;
 						break;
 					}
 					default: {
-						/* 						console.log(
-							`changing currentNode ${currentNode.structure.name} to child ${
-								currentNode.children.find(
-									(dir) => dir === new Node(input.target as Structure)
-								)?.structure.name
-							}`
-						); */
-
 						const target = new Node(input.target!);
 
 						const newNode = currentNode.children.find(
@@ -122,16 +163,17 @@ async function buildTree(lines: string[]): Promise<Node> {
 				}
 			}
 		} else {
-			// TODO: check for duplicates
-			/* 			console.log(
-				`adding child ${input.name} to currentNode ${currentNode.structure.name}`
-			); */
+			// TODO: check for duplicates if generalized
 			currentNode.addChild(input);
-			// console.log(`currentNode children: ${currentNode.children}`);
 		}
 	}
 
 	return rootNode;
+}
+
+// NOTE: this seems a wee bit too hacky
+function isAction(input: Action | Structure): input is Action {
+	return 'command' in input;
 }
 
 function parseInput(line: string): Action | Structure {
