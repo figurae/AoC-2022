@@ -35,7 +35,65 @@ async function solveFirst(input: string[]): Promise<string> {
 }
 
 async function solveSecond(input: string[]): Promise<string> {
-	return await input[0];
+	const treeMap = createTreeMap(input);
+	const width = treeMap[0].length;
+	const height = treeMap.length;
+
+	let max = 0;
+
+	for (let y = 1; y < height - 1; ++y) {
+		for (let x = 1; x < width - 1; ++x) {
+			const scenicScore = calculateScenicScore(treeMap, [y, x]);
+
+			if (scenicScore > max) {
+				max = scenicScore;
+			}
+		}
+	}
+
+	return max.toString();
+}
+
+function calculateScenicScore(
+	treeMap: number[][],
+	housePosition: [number, number]
+): number {
+	const width = treeMap[0].length;
+	const height = treeMap.length;
+	const [houseY, houseX] = housePosition;
+	const houseHeight = treeMap[houseY][houseX];
+
+	let [scoreN, scoreS, scoreW, scoreE] = Array(4).fill(0);
+
+	for (let y = houseY - 1; y >= 0; --y) {
+		++scoreN;
+		if (treeMap[y][houseX] >= houseHeight) {
+			break;
+		}
+	}
+
+	for (let y = houseY + 1; y < height; ++y) {
+		++scoreS;
+		if (treeMap[y][houseX] >= houseHeight) {
+			break;
+		}
+	}
+
+	for (let x = houseX - 1; x >= 0; --x) {
+		++scoreW;
+		if (treeMap[houseY][x] >= houseHeight) {
+			break;
+		}
+	}
+
+	for (let x = houseX + 1; x < width; ++x) {
+		++scoreE;
+		if (treeMap[houseY][x] >= houseHeight) {
+			break;
+		}
+	}
+
+	return scoreN * scoreS * scoreW * scoreE;
 }
 
 // TODO: try doing this with methods and generalizing it to any comparison
@@ -45,8 +103,7 @@ function isTreeVisible(
 ): boolean {
 	const width = treeMap[0].length;
 	const height = treeMap.length;
-	const treeY = treePositon[0];
-	const treeX = treePositon[1];
+	const [treeY, treeX] = treePositon;
 	const treeHeight = treeMap[treeY][treeX];
 
 	if (
@@ -60,7 +117,6 @@ function isTreeVisible(
 
 	let counter = 0;
 
-	// TODO: rewrite this into two nested loops, skipping treeY:treeX, like in Game of Life
 	for (let y = 0; y < treeY; ++y) {
 		if (treeMap[y][treeX] >= treeHeight) {
 			++counter;
@@ -89,18 +145,16 @@ function isTreeVisible(
 		}
 	}
 
-	if (counter === 4) {
-		return false;
-	} else {
-		return true;
-	}
+	return counter === 4 ? false : true;
 }
 
 function createTreeMap(input: string[]): number[][] {
 	const width = input[0].length;
 	const height = input.length;
 
-	let treeMap: number[][] = [...Array(width)].map((_) => Array(height));
+	// pre-generate a 2D array
+	// NOTE: double check width/height order if generalizing, input here is square
+	const treeMap: number[][] = [...Array(width)].map((_) => Array(height));
 
 	for (let y = 0; y < height; ++y) {
 		for (let x = 0; x < width; ++x) {
