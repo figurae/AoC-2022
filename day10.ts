@@ -17,8 +17,6 @@ export default async function day10(
 
 async function solveFirst(input: string[]): Promise<string> {
 	const instructions = await parseInput(input);
-	let registerX = 1;
-	let cycle = 1;
 
 	const cycleOffset = 40;
 	const cycleStart = 20;
@@ -26,21 +24,15 @@ async function solveFirst(input: string[]): Promise<string> {
 	let interestingCycle = cycleStart;
 	let signalStrengthSum = 0;
 
-	for await (const instruction of instructions) {
-		const instructionCycles = instruction.mnemonic as number;
+	const cpu = new Cpu(instructions);
 
-		if (
-			cycle === interestingCycle ||
-			(cycle < interestingCycle && cycle + instructionCycles > interestingCycle)
-		) {
-			signalStrengthSum += interestingCycle * registerX;
+	while (!cpu.done) {
+		if (cpu.cycle === interestingCycle) {
+			signalStrengthSum += interestingCycle * cpu.register;
 			interestingCycle += cycleOffset;
 		}
 
-		if (instruction.operand) {
-			registerX += instruction.operand;
-		}
-		cycle += instructionCycles;
+		cpu.advanceCycle()
 	}
 
 	return signalStrengthSum.toString();
@@ -77,6 +69,7 @@ class Cpu {
 	instructions: IterableIterator<Instruction>;
 	currentInstruction: Instruction;
 	busy: boolean;
+	done: boolean;
 
 	constructor(instructions: Instruction[]) {
 		this.cycle = 1;
@@ -84,6 +77,7 @@ class Cpu {
 		this.instructions = instructions.values();
 		this.currentInstruction = this.instructions.next().value;
 		this.busy = false;
+		this.done = false;
 	}
 
 	getSprite(): number[] {
@@ -116,6 +110,8 @@ class Cpu {
 
 		if (!nextInstruction.done) {
 			this.currentInstruction = nextInstruction.value;
+		} else {
+			this.done = true;
 		}
 	}
 
