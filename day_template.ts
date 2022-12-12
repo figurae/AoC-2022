@@ -15,10 +15,10 @@ export default async function day(
 	};
 }
 
-async function solveFirst(input: Array<string>): Promise<string> {
+async function solveFirst(input: string[]): Promise<string> {
 	return await input[0];
 }
 
-async function solveSecond(input: Array<string>): Promise<string> {
+async function solveSecond(input: string[]): Promise<string> {
 	return await input[0];
 }
