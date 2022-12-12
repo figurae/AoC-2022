@@ -53,7 +53,7 @@ async function solveSecond(input: string[]): Promise<string> {
 	const crt = new Crt();
 
 	for (let i = 1; i <= 240; ++i) {
-		crt.advanceCycle(cpu);
+		crt.drawToScreen(cpu.getSprite());
 		cpu.advanceCycle();
 	}
 
@@ -90,29 +90,28 @@ class Cpu {
 	}
 
 	advanceCycle() {
-		if (this.currentInstruction === undefined) {
-			console.log('aborting');
-			return;
-		}
-		console.log(this.currentInstruction.mnemonic);
 		if ((this.currentInstruction.mnemonic as number) > 1) {
-			console.log('setting busy');
 			this.busy = true;
 		}
 
 		if (this.busy) {
-			console.log(
-				`busy, waiting for ${this.currentInstruction.mnemonic} ${this.currentInstruction.operand}`
-			);
 			--this.currentInstruction.mnemonic;
 			if ((this.currentInstruction.mnemonic as number) === 0) {
 				this.busy = false;
-				console.log('adding ' + this.currentInstruction.operand + ' to register');
 				this.executeInstruction(this.currentInstruction);
-				this.currentInstruction = this.instructions.next().value[1];
+
+				const nextInstruction = this.instructions.next();
+
+				if (!nextInstruction.done) {
+					this.currentInstruction = nextInstruction.value[1];
+				}
 			}
 		} else {
-			this.currentInstruction = this.instructions.next().value;
+			const nextInstruction = this.instructions.next();
+
+			if (!nextInstruction.done) {
+				this.currentInstruction = nextInstruction.value[1];
+			}
 		}
 
 		++this.cycle;
@@ -128,35 +127,27 @@ class Crt {
 	output: string;
 
 	constructor() {
-		this.cycle = 1;
+		this.cycle = 0;
 		this.output = '';
 	}
 
-	advanceCycle(cpu: Cpu) {
-		this.drawToScreen(cpu.getSprite());
-
-		++this.cycle;
-	}
-
 	drawToScreen(sprite: number[]) {
-		console.log(`sprite ${sprite} includes ${this.cycle}?`);
 		if (sprite.includes(this.cycle)) {
-			console.log(`drawing #`);
 			this.output += '#';
 		} else {
-			console.log(`drawing .`);
 			this.output += '.';
 		}
 
-		if (this.cycle % 40 === 0) {
-			console.log('adding \\n and resetting cycle');
+		if (this.cycle === 39) {
 			this.output += '\n';
-			this.cycle = 1;
+			this.cycle = 0;
+		} else {
+			++this.cycle;
 		}
 	}
 
 	renderOutput(): string {
-		return this.output;
+		return this.output.slice(0, -2);
 	}
 }
 
