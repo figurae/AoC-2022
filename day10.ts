@@ -48,11 +48,12 @@ async function solveFirst(input: string[]): Promise<string> {
 
 async function solveSecond(input: string[]): Promise<string> {
 	const instructions = await parseInput(input);
+	const cycles = 240;
 
 	const cpu = new Cpu(instructions);
 	const crt = new Crt();
 
-	for (let i = 1; i <= 240; ++i) {
+	for (let i = 0; i < cycles; ++i) {
 		crt.drawToScreen(cpu.getSprite());
 		cpu.advanceCycle();
 	}
@@ -62,7 +63,7 @@ async function solveSecond(input: string[]): Promise<string> {
 
 enum Mnemonic {
 	Noop = 1,
-	Addx = 2,
+	Add = 2,
 }
 
 interface Instruction {
@@ -73,15 +74,15 @@ interface Instruction {
 class Cpu {
 	cycle: number;
 	register: number;
-	instructions: IterableIterator<[number, Instruction]>;
+	instructions: IterableIterator<Instruction>;
 	currentInstruction: Instruction;
 	busy: boolean;
 
 	constructor(instructions: Instruction[]) {
 		this.cycle = 1;
 		this.register = 1;
-		this.instructions = instructions.entries();
-		this.currentInstruction = this.instructions.next().value[1];
+		this.instructions = instructions.values();
+		this.currentInstruction = this.instructions.next().value;
 		this.busy = false;
 	}
 
@@ -90,59 +91,60 @@ class Cpu {
 	}
 
 	advanceCycle() {
+		++this.cycle;
+
 		if ((this.currentInstruction.mnemonic as number) > 1) {
 			this.busy = true;
 		}
 
-		if (this.busy) {
-			--this.currentInstruction.mnemonic;
-			if ((this.currentInstruction.mnemonic as number) === 0) {
-				this.busy = false;
-				this.executeInstruction(this.currentInstruction);
-
-				const nextInstruction = this.instructions.next();
-
-				if (!nextInstruction.done) {
-					this.currentInstruction = nextInstruction.value[1];
-				}
-			}
-		} else {
-			const nextInstruction = this.instructions.next();
-
-			if (!nextInstruction.done) {
-				this.currentInstruction = nextInstruction.value[1];
-			}
+		if (!this.busy) {
+			this.nextInstruction();
+			return;
 		}
 
-		++this.cycle;
+		if ((--this.currentInstruction.mnemonic as number) === 0) {
+			this.busy = false;
+
+			this.executeCurrentInstruction();
+
+			this.nextInstruction();
+		}
 	}
 
-	executeInstruction(instruction: Instruction) {
-		this.register += instruction.operand!;
+	nextInstruction() {
+		const nextInstruction = this.instructions.next();
+
+		if (!nextInstruction.done) {
+			this.currentInstruction = nextInstruction.value;
+		}
+	}
+
+	executeCurrentInstruction() {
+		this.register += this.currentInstruction.operand!;
 	}
 }
 
 class Crt {
-	cycle: number;
+	position: number;
 	output: string;
 
 	constructor() {
-		this.cycle = 0;
+		this.position = 0;
 		this.output = '';
 	}
 
 	drawToScreen(sprite: number[]) {
-		if (sprite.includes(this.cycle)) {
+		if (sprite.includes(this.position)) {
 			this.output += '#';
 		} else {
 			this.output += '.';
 		}
 
-		if (this.cycle === 39) {
+		if (this.position === 39) {
 			this.output += '\n';
-			this.cycle = 0;
+			this.position = 0;
 		} else {
-			++this.cycle;
+			++this.position;
 		}
 	}
 
@@ -169,7 +171,7 @@ async function parseInput(input: string[]): Promise<Instruction[]> {
 function parseMnemonic(input: string): Mnemonic {
 	switch (input) {
 		case 'addx':
-			return Mnemonic.Addx;
+			return Mnemonic.Add;
 		default:
 			return Mnemonic.Noop;
 	}
