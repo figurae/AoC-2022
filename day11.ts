@@ -23,7 +23,7 @@ async function solveFirst(input: string[]): Promise<string> {
 	let inspected: Uint16Array = new Uint16Array(monkeyQuantity).fill(0);
 
 	for (let i = 0; i < rounds; ++i) {
-		const newInspected = await monkeyTurn(monkeys, true);
+		const newInspected = await monkeysTurn(monkeys);
 
 		inspected = inspected.map((item, index) => item + newInspected[index]);
 	}
@@ -38,25 +38,29 @@ async function solveSecond(input: string[]): Promise<string> {
 	const monkeys = parseInput(input);
 	const monkeyQuantity = monkeys.length;
 
-	const rounds = 1000;
-	let inspected: Uint16Array = new Uint16Array(monkeyQuantity).fill(0);
+	const modulus = monkeys
+		.map((monkey) => monkey.divisor)
+		.reduce((a, b) => a * b);
+
+	const rounds = 10000;
+	let inspected: Uint32Array = new Uint32Array(monkeyQuantity).fill(0);
 
 	for (let i = 0; i < rounds; ++i) {
-		const newInspected = await monkeyTurn(monkeys, false);
+		const newInspected = await monkeysTurn(monkeys, modulus);
 
 		inspected = inspected.map((item, index) => item + newInspected[index]);
 	}
 
-	// console.log(inspected);
+	console.log(inspected);
 	const sorted = inspected.sort().reverse();
 	const result = sorted[0] * sorted[1];
 
 	return result.toString();
 }
 
-async function monkeyTurn(
+async function monkeysTurn(
 	monkeys: Monkey[],
-	manageStress: boolean
+	modulus?: number
 ): Promise<number[]> {
 	const monkeyQuantity = monkeys.length;
 	const inspected: number[] = Array(monkeyQuantity).fill(0);
@@ -65,7 +69,7 @@ async function monkeyTurn(
 		for await (let item of monkey.items) {
 			item = operate(item, monkey.operator, monkey.operand);
 
-			item = manageStress ? ~~(item / 3) : item;
+			item = modulus ? item % modulus : ~~(item / 3);
 
 			const target = testItem(item, monkey.divisor)
 				? monkey.target.trueId
