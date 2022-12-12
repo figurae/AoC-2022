@@ -51,7 +51,6 @@ async function solveSecond(input: string[]): Promise<string> {
 		inspected = inspected.map((item, index) => item + newInspected[index]);
 	}
 
-	console.log(inspected);
 	const sorted = inspected.sort().reverse();
 	const result = sorted[0] * sorted[1];
 
