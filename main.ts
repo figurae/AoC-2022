@@ -8,6 +8,7 @@ import day07 from './day07.ts';
 import day08 from './day08.ts';
 import day09 from './day09.ts';
 import day10 from './day10.ts';
+import day11 from './day11.ts';
 
 const separator = '✲✧✲✧✲✧✲✧✲✧✲✧✲✧✲✧✲✧✲✧✲';
 
@@ -57,6 +58,7 @@ const days = [
 	day08,
 	day09,
 	day10,
+	day11,
 ];
 
 const allResults: Array<Results> = [];
