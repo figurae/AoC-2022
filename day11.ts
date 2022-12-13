@@ -70,9 +70,10 @@ async function monkeysTurn(
 
 			item = modulus ? item % modulus : ~~(item / 3);
 
-			const target = testItem(item, monkey.divisor)
-				? monkey.target.trueId
-				: monkey.target.falseId;
+			const target =
+				item % monkey.divisor === 0
+					? monkey.target.trueId
+					: monkey.target.falseId;
 
 			monkeys[target].items.push(item);
 
@@ -83,14 +84,6 @@ async function monkeysTurn(
 	}
 
 	return inspected;
-}
-
-function testItem(item: number, divisor: number): boolean {
-	if (item % divisor === 0) {
-		return true;
-	} else {
-		return false;
-	}
 }
 
 function operate(
