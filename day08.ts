@@ -153,8 +153,7 @@ function createTreeMap(input: string[]): number[][] {
 	const height = input.length;
 
 	// pre-generate a 2D array
-	// NOTE: double check width/height order if generalizing, input here is square
-	const treeMap: number[][] = [...Array(width)].map((_) => Array(height));
+	const treeMap: number[][] = [...Array(height)].map((_) => Array(width));
 
 	for (let y = 0; y < height; ++y) {
 		for (let x = 0; x < width; ++x) {
