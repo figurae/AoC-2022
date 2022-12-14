@@ -37,10 +37,12 @@ async function solveFirst(input: string[]): Promise<string> {
 	}
 
 	const startNode = graph.getNode(startPos);
+	startNode?.setVisitableFrom(startPos);
 
-	// FIXME: this works but takes far too long for actual data
-	// const result = await findPath(graph, startNode!, endPos);
+	// FIXME: this works for example but not for final data
+	await floodFill(graph, startNode!, endPos);
 
+	console.log(graph.getNode(endPos)?.floodedOnStep);
 	return '';
 }
 
@@ -48,42 +50,29 @@ async function solveSecond(input: string[]): Promise<string> {
 	return await input[0];
 }
 
-// OPTIMIZE: there should be a much better algorithm than this
-async function findPath(
+async function floodFill(
 	graph: Graph,
-	node: Node,
+	currentNode: Node,
 	endPos: Coord,
-	moveStatus: [number, number] = [0, Number.MAX_SAFE_INTEGER]
-): Promise<[number, number]> {
-	let [currentMove, shortestPath] = moveStatus;
+	currentStep = 0
+) {
+	await currentNode.setValidNeighbours(graph);
 
-	if (compareCoords(node.coord, endPos)) {
-		if (currentMove < shortestPath) {
-			console.log(`found ${currentMove}`);
-			return [currentMove - 1, currentMove];
-		} else {
-			return [currentMove - 1, shortestPath];
+	for await (const neighbourCoord of currentNode.validNeighbours) {
+		const neighbourNode = graph.getNode(neighbourCoord);
+
+		neighbourNode!.setVisitableFrom(currentNode.coord);
+
+		if (neighbourNode!.floodedOnStep === -1) {
+			neighbourNode!.floodOnStep(currentStep + 1);
 		}
 	}
 
-	node.setVisited();
-
-	await node.setValidNeighbours(graph);
-
-	for await (const neighbourCoord of node.validNeighbours) {
+	for await (const neighbourCoord of currentNode.validNeighbours) {
 		const neighbourNode = graph.getNode(neighbourCoord);
-
-		[currentMove, shortestPath] = await findPath(
-			graph,
-			neighbourNode!,
-			endPos,
-			[currentMove + 1, shortestPath]
-		);
+		await floodFill(graph, neighbourNode!, endPos, currentStep + 1);
 	}
-
-	node.unsetVisited();
-
-	return [currentMove - 1, shortestPath];
+	return;
 }
 
 const Direction = {
@@ -106,14 +95,16 @@ class Node {
 	char: string;
 	height: number;
 	validNeighbours: Coord[];
-	visited: boolean;
+	visitableFrom: Coord;
+	floodedOnStep: number;
 
 	constructor(coord: Coord, char: string) {
 		this.coord = coord;
 		this.char = char;
 		this.validNeighbours = [];
 		this.height = this.calculateHeight(this.char);
-		this.visited = false;
+		this.visitableFrom = [-1, -1];
+		this.floodedOnStep = -1;
 	}
 
 	calculateHeight(char: string) {
@@ -136,8 +127,9 @@ class Node {
 
 			if (
 				neighbourNode !== undefined &&
-				neighbourNode.visited === false &&
-				isValidDestination(this, neighbourNode)
+				(compareCoords(neighbourNode!.visitableFrom, [-1, -1]) ||
+					compareCoords(neighbourNode!.visitableFrom, this.coord)) &&
+				isValidDestination(this, neighbourNode!)
 			) {
 				validNeighbours.push(neighbour);
 			}
@@ -146,12 +138,12 @@ class Node {
 		this.validNeighbours = validNeighbours;
 	}
 
-	setVisited() {
-		this.visited = true;
+	floodOnStep(step: number) {
+		this.floodedOnStep = step;
 	}
 
-	unsetVisited() {
-		this.visited = false;
+	setVisitableFrom(coord: Coord) {
+		this.visitableFrom = coord;
 	}
 }
 
