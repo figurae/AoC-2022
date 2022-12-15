@@ -25,10 +25,9 @@ async function solveFirst(input: string[]): Promise<string> {
 	const startPos = await findChar(map, STARTCHAR);
 	const endPos = await findChar(map, ENDCHAR);
 
-	const [width, height] = [map[0].length, map.length];
-
 	// TODO: map the solution
-	const solutionMap = await generateEmptyMap(width, height);
+	// const [width, height] = [map[0].length, map.length];
+	// const solutionMap = await generateEmptyMap(width, height);
 
 	const graph = new Graph(map);
 
@@ -38,35 +37,73 @@ async function solveFirst(input: string[]): Promise<string> {
 
 	const startNode = graph.getNode(startPos);
 	startNode?.setVisitableFrom(startPos);
+	startNode?.floodOnStep(0);
 
-	// FIXME: this works for example but not for final data
-	await floodFill(graph, startNode!, endPos);
+	// OPTIMIZE: this works but is a bit slow
+	// await floodFill(graph, startNode!, endPos);
 
-	console.log(graph.getNode(endPos)?.floodedOnStep);
-	return '';
+	// const result = graph.getNode(endPos)?.floodedOnStep;
+	// return result;
+	return 'omitted for performance';
 }
 
 async function solveSecond(input: string[]): Promise<string> {
-	return await input[0];
+	const map = await generateMap(input);
+	const startPos = await findChar(map, STARTCHAR);
+	const endPos = await findChar(map, ENDCHAR);
+
+	const graph = new Graph(map);
+
+	const startNode = graph.getNode(startPos);
+	startNode?.setVisitableFrom(startPos);
+	startNode?.floodOnStep(0);
+
+	const startCoords = await findAllChars(map, 'a');
+	const startNodes: Node[] = []
+
+	for (const coord of startCoords) {
+		startNodes.push(graph.getNode(coord)!);
+	}
+
+	startNodes.push(startNode!);
+
+	// OPTIMIZE: this takes around 2 minutes
+	for await (const node of startNodes) {
+		node.setVisitableFrom(node.coord);
+		node.floodOnStep(0);
+
+		// console.log(`floodfilling ${node.coord}`);
+		// await floodFill(graph, node!, endPos);
+	}
+
+	// const result = graph.getNode(endPos)?.floodedOnStep;
+	// return result!.toString();
+	return 'omitted for performance';
 }
 
-async function floodFill(
-	graph: Graph,
-	currentNode: Node,
-	endPos: Coord,
-	currentStep = 0
-) {
+async function floodFill(graph: Graph, currentNode: Node, endPos: Coord, currentStep = 0) {
 	await currentNode.setValidNeighbours(graph);
 
 	for await (const neighbourCoord of currentNode.validNeighbours) {
 		const neighbourNode = graph.getNode(neighbourCoord);
 
-		neighbourNode!.setVisitableFrom(currentNode.coord);
-
-		if (neighbourNode!.floodedOnStep === -1) {
+		// console.log(`checking neighbour ${neighbourNode?.coord} with fOS ${neighbourNode?.floodedOnStep}`);
+		if (
+			neighbourNode!.floodedOnStep === -1 ||
+			neighbourNode!.floodedOnStep > currentStep + 1
+		) {
+			// console.log(`flooding ${neighbourNode?.coord} on step ${currentStep}`);
 			neighbourNode!.floodOnStep(currentStep + 1);
+			neighbourNode!.setVisitableFrom(currentNode.coord);
+			if (compareCoords(neighbourCoord, endPos)) {
+				console.log(`found path at ${currentStep + 1}`);
+			}
 		}
 	}
+
+	// console.log(`valid neighbours before setVisitable: ${currentNode.validNeighbours}`);
+	await currentNode.setVisitableNeighbours(graph);
+	// console.log(`valid neighbours afer setVisitable: ${currentNode.validNeighbours}`);
 
 	for await (const neighbourCoord of currentNode.validNeighbours) {
 		const neighbourNode = graph.getNode(neighbourCoord);
@@ -127,10 +164,26 @@ class Node {
 
 			if (
 				neighbourNode !== undefined &&
-				(compareCoords(neighbourNode!.visitableFrom, [-1, -1]) ||
-					compareCoords(neighbourNode!.visitableFrom, this.coord)) &&
 				isValidDestination(this, neighbourNode!)
 			) {
+				validNeighbours.push(neighbour);
+			}
+		}
+
+		this.validNeighbours = validNeighbours;
+	}
+
+	async setVisitableNeighbours(graph: Graph) {
+		const validNeighbours: Coord[] = [];
+
+		for await (const neighbour of this.validNeighbours) {
+			const neighbourNode = graph.getNode(neighbour);
+			// console.log(`${neighbour} is visitable from ${neighbourNode?.visitableFrom}`);
+			if (
+				compareCoords(neighbourNode!.visitableFrom, [-1, -1]) ||
+				compareCoords(neighbourNode!.visitableFrom, this.coord)
+			) {
+				// console.log(`pushing ${neighbour}`);
 				validNeighbours.push(neighbour);
 			}
 		}
@@ -209,6 +262,19 @@ async function findChar(map: string[][], char: string): Promise<Coord> {
 	return [-1, -1];
 }
 
+async function findAllChars(map: string[][], char: string): Promise<Coord[]> {
+	const chars: Coord[] = [];
+
+	for await (const [y, row] of map.entries()) {
+		for await (const [x, mapChar] of row.entries()) {
+			if (mapChar === char) {
+				chars.push([y, x]);
+			}
+		}
+	}
+
+	return chars;
+}
 function searchMapSync(
 	map: string[][],
 	func: (coord: Coord, mapChar: string) => void
