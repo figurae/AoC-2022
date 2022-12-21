@@ -16,9 +16,9 @@ export default async function day(
 }
 
 async function solveFirst(input: string[]): Promise<string> {
-	return await input[0];
+	return '';
 }
 
 async function solveSecond(input: string[]): Promise<string> {
-	return await input[0];
+	return '';
 }
