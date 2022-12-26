@@ -1,3 +1,4 @@
+import { range } from './helpers/range.ts';
 import { Results } from './main.ts';
 
 export default async function day04(
@@ -78,8 +79,4 @@ function getRange(rangeString: string): number[] {
 	const [beginRange, endRange] = rangeString.split('-');
 
 	return range(parseInt(beginRange), parseInt(endRange));
-}
-
-function range(begin: number, end: number): number[] {
-	return [...Array(Math.floor(end - begin) + 1)].map((_, i) => begin + i);
 }
