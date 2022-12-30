@@ -18,4 +18,8 @@ export class Vector2D {
 	scale(scalar: number): Vector2D {
 		return new Vector2D(this.x * scalar, this.y * scalar);
 	}
+
+	isEqual(vector: Vector2D): boolean {
+		return this.x === vector.x && this.y === vector.y;
+	}
 }

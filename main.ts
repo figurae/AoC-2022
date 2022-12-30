@@ -23,6 +23,13 @@ export interface Results {
 	secondResult: string;
 }
 
+export const OMIT_RESULTS: Results = {
+	firstExampleResult: 'omitted for performance',
+	firstResult: 'omitted for performance',
+	secondExampleResult: 'omitted for performance',
+	secondResult: 'omitted for performance',
+}
+
 const inputs: {
 	exampleInputs: Array<string>;
 	actualInputs: Array<string>;
