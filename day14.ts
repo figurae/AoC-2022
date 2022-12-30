@@ -1,3 +1,4 @@
+import { DoubleEndedArray } from './helpers/double-ended-array.ts';
 import { range } from './helpers/range.ts';
 import { Vector2D } from './helpers/vector2d.ts';
 import { Results } from './main.ts';
@@ -33,14 +34,76 @@ async function solveSecond(input: string[]): Promise<string> {
 	return grains.toString();
 }
 
+interface Line {
+	points: Vector2D[];
+}
+
+enum Tile {
+	Air,
+	Rock,
+	SandSource,
+	Sand,
+}
+
+class Cave {
+	height: number;
+	sandSource: Vector2D;
+	map: DoubleEndedArray<Tile[]>;
+
+	constructor(height: number) {
+		this.height = height;
+
+		this.map = new DoubleEndedArray();
+
+		this.sandSource = new Vector2D(SANDSOURCE.x, SANDSOURCE.y);
+		this.setTile(Tile.SandSource, this.sandSource);
+	}
+
+	setTile(tile: Tile, coordinates: Vector2D) {
+		while (this.map.at(coordinates.x - this.sandSource.x) === undefined) {
+			const newColumn = Array(this.height).fill(Tile.Air);
+
+			if (coordinates.x < this.sandSource.x) {
+				this.map.pushLeft(newColumn);
+			} else {
+				this.map.pushRight(newColumn);
+			}
+		}
+
+		this.map.at(coordinates.x - this.sandSource.x)[
+			coordinates.y - this.sandSource.y
+		] = tile;
+	}
+
+	getTile(coordinates: Vector2D): Tile {
+		const column = this.map.at(coordinates.x - this.sandSource.x);
+
+		if (coordinates.y === this.height + 1) {
+			return Tile.Rock;
+		}
+
+		if (column !== undefined) {
+			return column[coordinates.y - this.sandSource.y];
+		} else {
+			return Tile.Air;
+		}
+	}
+}
+
+// TODO: this could use a good refactoring
 function countGrainsWithFloor(cave: Cave): number {
-	let grains = 0
+	let grains = 0;
 	let lastGrain = false;
 
 	while (!lastGrain) {
 		const newGrainCoordinates = simulateGrainWithFloor(cave);
 
-		if (newGrainCoordinates.x !== SANDSOURCE.x && newGrainCoordinates.y !== SANDSOURCE.y) {
+		if (
+			!(
+				newGrainCoordinates.x === cave.sandSource.x &&
+				newGrainCoordinates.y === cave.sandSource.y
+			)
+		) {
 			cave.setTile(Tile.Sand, newGrainCoordinates);
 
 			++grains;
@@ -77,8 +140,9 @@ const Direction = {
 	DownRight: { x: 1, y: 1 } as Vector2D,
 };
 
+// TODO: refactor
 function simulateGrainWithFloor(cave: Cave): Vector2D {
-	let grainCoordinates = new Vector2D(SANDSOURCE.x, SANDSOURCE.y);
+	let grainCoordinates = new Vector2D(cave.sandSource.x, cave.sandSource.y);
 	const falling = true;
 
 	while (falling) {
@@ -101,17 +165,13 @@ function simulateGrainWithFloor(cave: Cave): Vector2D {
 }
 
 function simulateGrain(cave: Cave): Vector2D | undefined {
-	let grainCoordinates = new Vector2D(SANDSOURCE.x, SANDSOURCE.y).add(
+	let grainCoordinates = new Vector2D(cave.sandSource.x, cave.sandSource.y).add(
 		Direction.Down
 	);
 	const falling = true;
 
 	while (falling) {
-		if (
-			grainCoordinates.y >= cave.minMax.maxY ||
-			grainCoordinates.x > cave.minMax.maxX ||
-			grainCoordinates.x < cave.minMax.minX
-		) {
+		if (grainCoordinates.y >= cave.height) {
 			return undefined;
 		}
 
@@ -133,55 +193,11 @@ function simulateGrain(cave: Cave): Vector2D | undefined {
 	return grainCoordinates;
 }
 
-interface Line {
-	points: Vector2D[];
-}
-
-enum Tile {
-	Air,
-	Rock,
-	SandSource,
-	Sand,
-}
-
-// TODO: refactor this for infinite floor. use a deque for width?
-class Cave {
-	minMax: CaveMinMax;
-	sandSource: Vector2D;
-	map: Tile[][];
-
-	constructor(minMax: CaveMinMax) {
-		this.minMax = minMax;
-
-		const width = minMax.maxX - minMax.minX + 1;
-		const height = minMax.maxY - minMax.minY + 1;
-		this.map = [...Array(height)].map((_) => Array(width).fill(Tile.Air));
-
-		this.sandSource = new Vector2D(
-			SANDSOURCE.x - minMax.minX,
-			SANDSOURCE.y - minMax.minY
-		);
-		this.setTile(Tile.SandSource, this.sandSource);
-	}
-
-	setTile(tile: Tile, coordinates: Vector2D) {
-		this.map[coordinates.y - this.minMax.minY][
-			coordinates.x - this.minMax.minX
-		] = tile;
-	}
-
-	getTile(coordinates: Vector2D): Tile {
-		return this.map[coordinates.y - this.minMax.minY][
-			coordinates.x - this.minMax.minX
-		];
-	}
-}
-
 async function generateCave(input: string[]): Promise<Cave> {
 	const allLines = await getLines(input);
 
-	const caveMinMax = await getCaveMinMax(allLines);
-	const cave = new Cave(caveMinMax);
+	const caveHeight = getCaveHeight(allLines);
+	const cave = new Cave(caveHeight);
 
 	const allRockCoordinates = await getAllRockCoordinates(allLines);
 
@@ -244,29 +260,15 @@ function getRocksBetweenPoints(pointA: Vector2D, pointB: Vector2D): Vector2D[] {
 	return rocksBetweenPoints;
 }
 
-interface CaveMinMax {
-	minX: number;
-	minY: number;
-	maxX: number;
-	maxY: number;
-}
-
-async function getCaveMinMax(allLines: Line[]): Promise<CaveMinMax> {
-	let minX = SANDSOURCE.x;
-	let minY = SANDSOURCE.y;
-	let maxX = SANDSOURCE.x;
-	let maxY = SANDSOURCE.y;
-
-	for await (const line of allLines) {
-		for await (const point of Object.values(line.points)) {
-			if (point.x < minX) minX = point.x;
-			if (point.x > maxX) maxX = point.x;
-			if (point.y < minY) minY = point.y;
-			if (point.y > maxY) maxY = point.y;
-		}
-	}
-
-	return { minX, minY, maxX, maxY };
+function getCaveHeight(allLines: Line[]): number {
+	return (
+		Math.max(
+			...allLines
+				.map((line) => line.points)
+				.flat()
+				.map((item) => item.y)
+		) + 1
+	);
 }
 
 async function getLines(input: string[]): Promise<Line[]> {
