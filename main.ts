@@ -13,6 +13,7 @@ import day12 from './day12.ts';
 import day13 from './day13.ts';
 import day14 from './day14.ts';
 import day15 from './day15.ts';
+import day16 from './day16.ts';
 
 const separator = '✲✧✲✧✲✧✲✧✲✧✲✧✲✧✲✧✲✧✲✧✲';
 
@@ -28,7 +29,7 @@ export const OMIT_RESULTS: Results = {
 	firstResult: 'omitted for performance',
 	secondExampleResult: 'omitted for performance',
 	secondResult: 'omitted for performance',
-}
+};
 
 const inputs: {
 	exampleInputs: Array<string>;
@@ -74,6 +75,7 @@ const days = [
 	day13,
 	day14,
 	day15,
+	day16,
 ];
 
 const allResults: Array<Results> = [];
